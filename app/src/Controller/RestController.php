@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+class RestController extends AbstractController
+{
+    protected function handleError($message, $data = [], $status = 400)
+    {
+        return $this->json([
+            'message' => $message,
+            'errors' => $data,
+            'status' => $status
+        ], $status);
+    }
+    
+    protected function handleResponse($message, $data = [], $status = 200)
+    {
+        return $this->json([
+            'message' => $message,
+            'data' => $data,
+            'status' => $status
+        ], $status);
+    }
+
+
+}

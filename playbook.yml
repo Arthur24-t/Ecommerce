@@ -1,0 +1,123 @@
+- name: Deploy symfony
+  remote_user: root
+  hosts: servers
+  become: true
+  
+  vars:
+    project_name: symfony
+    nginx_config_file: symfony.conf
+    github_repo_url: https://github.com/Arthur24-t/test-symfony.git
+    github_branch: main
+    packages_to_install:
+      - ca-certificates
+      - apt-transport-https
+      - software-properties-common
+      - wget
+      - lsb-release
+      - nginx
+      - php
+      - php8.1
+      - php8.1-fpm
+      - php8.1-mbstring
+      - php8.1-opcache
+      - php8.1-xml
+      - php8.1-zip
+      - php8.1-curl
+      - php8.1-mysql
+      - php8.1-cli
+      - curl
+      - docker
+      - docker-compose
+      - git
+      - sudo
+
+
+  tasks:
+    - name: Get php 8.1
+      shell: curl -sSL https://packages.sury.org/php/README.txt | bash -x
+    
+    - name: update package
+      shell: apt update
+
+    - name: Install packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages_to_install }}"
+
+    - name: remove Apache
+      apt:
+        name: "apache2"
+        state: absent
+
+    - name: install composer
+      shell: php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"; php -r "if (hash_file('sha384', 'composer-setup.php') === '55ce33d7678c5a611085589f1f3ddf8b3c52d662cd01d4ba75c0ee0459970c2200a51f492d557530c71c15d8dba01eae') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"; php composer-setup.php; php -r "unlink('composer-setup.php');"; mv composer.phar /usr/local/bin/composer
+
+    - name: Clone project from Github
+      git:
+          repo: "{{ github_repo_url }}"
+          dest: "/var/www/{{ project_name }}"
+          version: "{{ github_branch }}"
+      register: git_clone
+
+    - name: Copy env
+      copy:
+        src: envexemple
+        dest: "/var/www/{{ project_name }}/.env"
+
+    - name: Copy docker compose
+      copy:
+        src: docker-compose.yml
+        dest: "/var/www/docker-compose.yml"
+
+    - name: Tear down existing services
+      community.docker.docker_compose:
+        project_src: /var/www/
+        state: absent
+
+    - name: Create and start services
+      community.docker.docker_compose:
+        project_src: /var/www/
+      register: output
+
+    - ansible.builtin.debug:
+        var: output
+
+    - name: Run `docker-compose up` again
+      community.docker.docker_compose:
+        project_src: /var/www/
+        build: false
+
+      register: output
+    - name: Acces Right   
+      shell: "usermod -aG sudo arthur"
+
+    - name: Acces Right   
+      shell: "chown -R arthur:arthur /var/www/{{ project_name }}"
+
+    - name: Install project dependencies
+      become_user: arthur
+      composer:
+        command: install
+        global_command: false
+        no_dev: false
+        working_dir: "/var/www/{{ project_name }}"
+
+    - name: Create Nginx virtual host file
+      template:
+        src: symfony.conf
+        dest: "/etc/nginx/sites-available/{{ nginx_config_file }}"
+      notify: Reload Nginx
+
+    - name: Enable Nginx virtual host
+      file:
+        src: "/etc/nginx/sites-available/{{ nginx_config_file }}"
+        dest: "/etc/nginx/sites-enabled/{{ nginx_config_file }}"
+        state: link
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      systemd:
+        name: nginx
+        state: restarted
