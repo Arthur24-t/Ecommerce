@@ -30,7 +30,7 @@ class UserController extends RestController implements TokenAuthenticatedControl
     }
 
 
-    #[Route('/users', name: 'user_update', methods: ["PUT"])]
+    #[Route('/users', name: 'user_update', methods: ["POST"])]
     public function updateUser(
         EntityManagerInterface $entityManager,
         SymfonyRequest $request,

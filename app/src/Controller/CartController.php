@@ -141,6 +141,8 @@ class CartController extends RestController implements TokenAuthenticatedControl
         TokenService $token,
         OrderRepository $orderRepository,
         OrderProductRepository $orderProductRepository,
+        CartRepository $cartRepository,
+        CartProductRepository $cartProductRepository,
         EntityManagerInterface $entityManagerInterface
     ) {
         $request = new Request($request);
@@ -170,6 +172,10 @@ class CartController extends RestController implements TokenAuthenticatedControl
             $orderProductRepository->add($orderProduct);
 
             $order->addProduct($orderProduct);
+            
+            $cartProductRepository->remove($cartProduct);
+            $cart->removeCartProduct($cartProduct);
+            $cartRepository->persist();
         }
 
         $order->setTotalPrice($totalPrice);

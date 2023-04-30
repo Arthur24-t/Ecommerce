@@ -44,6 +44,25 @@ class ProductController extends RestController implements TokenAuthenticatedCont
         return $this->json($data);
     }
     
+    #[Route('/products/{productId}', name: 'app_products_getOne', methods: ["GET"])]
+    public function show(
+        EntityManagerInterface $em,
+        ProductRepository $pr,
+        $productId
+    ) {
+        $product = $pr->findOneBy(['id' => $productId]);
+
+        if (!isset($product)) {
+            return $this->handleError('Product not found', [], 404);
+        }
+
+        $productResource = new ProductResource($em);
+
+        return $this->handleResponse('Product found', [
+            'product' => $productResource->resource($product)
+        ]);
+    }
+
     #[Route('/product', name: 'api_product_add', methods: ["POST"])]
     public function createProduct(
         EntityManagerInterface $entityManager,
@@ -81,26 +100,6 @@ class ProductController extends RestController implements TokenAuthenticatedCont
         return $this->handleResponse('Product created', [
             'product' => $productResource->resource($product)
         ], 201);
-    }
-
-
-    #[Route('/products/{productId}', name: 'app_products_getOne', methods: ["GET"])]
-    public function show(
-        EntityManagerInterface $em,
-        ProductRepository $pr,
-        $productId
-    ) {
-        $product = $pr->findOneBy(['id' => $productId]);
-
-        if (!isset($product)) {
-            return $this->handleError('Product not found', [], 404);
-        }
-
-        $productResource = new ProductResource($em);
-
-        return $this->handleResponse('Product found', [
-            'product' => $productResource->resource($product)
-        ]);
     }
 
     #[Route('/product/{productId}', name: 'app_product_update', methods: "POST")] 

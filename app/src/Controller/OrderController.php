@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 #[Route('/api')]
 class OrderController extends RestController implements TokenAuthenticatedController
 {
-    #[Route('/orders/{$orderId}', name: 'app_orders_getOne', methods: ["GET"])]
+    #[Route('/orders/{orderId}', name: 'app_orders_getOne', methods: ["GET"])]
     public function getOneOrder(
         UserRepository $userRepository,
         SymfonyRequest $request,
